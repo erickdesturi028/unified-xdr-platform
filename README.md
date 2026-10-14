@@ -61,10 +61,3 @@ python3 -m http.server 3000
 Open your browser at http://localhost:3000 to access the SOC Analyst Console.4. Run Telemetry Simulator (Optional)To test rule triggers and see live security alerts on the dashboard:Bashgo run cmd/simulator/main.go
 🔍 Threat Hunting & API EndpointsEndpointMethodPurpose/api/v1/alertsGETRetrieve real-time security alerts/api/v1/logsGETStream raw ingested telemetry/api/v1/containmentPOSTTrigger automated endpoint isolation📜 LicenseThis project is developed for educational and security research purposes.
 ---
-
-### Verify Setup
-After saving the file, verify that `README.md` shows up at the root level of your project alongside `docker-compose.yml` and `rules.yaml`[cite: 2].
-
-You can test if the step was successful by opening the VS Code terminal and running:
-```bash
-git status
