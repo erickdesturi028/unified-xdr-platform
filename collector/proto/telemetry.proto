@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package telemetry;
+
+option go_package = "unified-xdr-platform/collector/proto/telemetry";
+
+// Telemetry Message Definition
+message EventLog {
+  string event_id = 1;          // e.g., "4769", "4624", "4104"
+  string timestamp = 2;         // ISO 8601 string
+  string host_name = 3;         // Source computer name
+  string user_name = 4;         // Account associated with event
+  string source_ip = 5;         // Network origin (if applicable)
+  
+  // Dynamic metadata key-value map for process paths, registry keys, command lines, etc.
+  map<string, string> metadata = 6; 
+}
+
+// Host Isolation Action Request sent from Server -> Agent
+message ContainmentRequest {
+  string host_name = 1;
+  bool isolate = 2;             // true = isolate, false = restore
+}
+
+message ContainmentResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message StreamResponse {
+  bool acknowledged = 1;
+}
+
+// Streaming service definition
+service TelemetryService {
+  // Agent streams events to collector
+  rpc StreamTelemetry (stream EventLog) returns (StreamResponse);
+  
+  // Server triggers host isolation on agent
+  rpc ExecuteContainment (ContainmentRequest) returns (ContainmentResponse);
+}

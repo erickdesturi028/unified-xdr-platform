@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified XDR & Threat Hunting Console</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #111827;
+            --border-color: #1f2937;
+            --text-color: #f3f4f6;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-purple: #8b5cf6;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+        .status-badge { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; background: rgba(16, 185, 129, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+
+        /* Threat Hunting & Filter Bar */
+        .hunting-container {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px 14px;
+            background-color: #1f2937;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .search-input:focus { outline: none; border-color: var(--accent-blue); }
+
+        .filter-btn {
+            padding: 8px 14px;
+            background-color: #1f2937;
+            border: 1px solid var(--border-color);
+            color: #9ca3af;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background-color: var(--accent-blue);
+            color: #ffffff;
+        }
+
+        .filter-btn.hunt-btn {
+            background-color: rgba(139, 92, 246, 0.2);
+            color: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+
+        .filter-btn.hunt-btn:hover {
+            background-color: var(--accent-purple);
+            color: #ffffff;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .card h2 { margin: 0; font-size: 1.1rem; }
+        .visible-count { font-size: 0.8rem; color: #9ca3af; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            word-break: break-all;
+        }
+
+        th { color: #9ca3af; text-transform: uppercase; font-size: 0.75rem; }
+
+        .badge-CRITICAL { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+        .badge-HIGH { background: rgba(245, 158, 11, 0.2); color: var(--accent-yellow); padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+        .badge-MEDIUM { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); padding: 3px 8px; border-radius: 4px; }
+        .badge-INFO { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); padding: 3px 8px; border-radius: 4px; }
+
+        .btn-isolate {
+            background-color: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .btn-isolate:hover { opacity: 0.8; }
+
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        input[type="text"].host-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: #1f2937;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: white;
+        }
+
+        .action-log {
+            margin-top: 15px;
+            padding: 10px;
+            background: #000;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #10b981;
+            min-height: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🛡️ Unified XDR SOC Analyst Dashboard</h1>
+        <span class="status-badge">● Live Streaming</span>
+    </header>
+
+    <div class="hunting-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Threat Hunting Search (e.g., powershell, CRITICAL, WORKSTATION-01, T1059)..." onkeyup="applyFilter()">
+        
+        <button class="filter-btn active" onclick="setSeverityFilter('ALL')">ALL</button>
+        <button class="filter-btn" onclick="setSeverityFilter('CRITICAL')">CRITICAL</button>
+        <button class="filter-btn" onclick="setSeverityFilter('HIGH')">HIGH</button>
+        <button class="filter-btn" onclick="setSeverityFilter('MEDIUM')">MEDIUM</button>
+
+        <button class="filter-btn hunt-btn" onclick="setHuntFilter('powershell')">⚡ PowerShell</button>
+        <button class="filter-btn hunt-btn" onclick="setHuntFilter('logon')">🔑 AD Logons</button>
+        <button class="filter-btn hunt-btn" onclick="setHuntFilter('process')">💀 Process Anomalies</button>
+        <button class="filter-btn hunt-btn" onclick="window.open('http://localhost:7474', '_blank')">🌐 Neo4j Graph</button>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="card-header">
+                <h2>🚨 Real-Time Security Alerts</h2>
+                <span class="visible-count" id="alertCount">0 visible</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Alert ID</th>
+                        <th>Title</th>
+                        <th>Severity</th>
+                        <th>Host</th>
+                    </tr>
+                </thead>
+                <tbody id="alerts-body">
+                    <tr><td colspan="4" style="color: #9ca3af;">Loading security alerts...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>📜 Ingested Telemetry Stream</h2>
+                <span class="visible-count" id="logCount">0 visible</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Event ID</th>
+                        <th>Host</th>
+                        <th>User</th>
+                        <th>MITRE TTP</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-body">
+                    <tr><td colspan="4" style="color: #9ca3af;">Loading telemetry logs...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <br>
+
+    <div class="card">
+        <h2>⚡ Active Response / Endpoint Containment (SOAR)</h2>
+        <p style="font-size: 0.85rem; color: #9ca3af;">Manually issue isolation signals to EDR agents over gRPC.</p>
+        <div class="form-group">
+            <input type="text" id="target-host" class="host-input" placeholder="Enter Host Name (e.g., WORKSTATION-01)">
+            <button class="btn-isolate" onclick="triggerContainment(true)">Isolate Endpoint</button>
+            <button class="filter-btn" onclick="triggerContainment(false)">Restore Endpoint</button>
+        </div>
+        <div class="action-log" id="action-output">> System Ready.</div>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8080/api/v1";
+        let rawAlerts = [];
+        let rawLogs = [];
+        let activeSeverityFilter = "ALL";
+
+        async function fetchAlerts() {
+            try {
+                const res = await fetch(`${API_BASE}/alerts`);
+                if (!res.ok) throw new Error(`HTTP Status ${res.status}`);
+                
+                const data = await res.json();
+                rawAlerts = (data.hits && data.hits.hits) ? data.hits.hits : [];
+                renderAlerts();
+            } catch (err) {
+                console.error("Alerts fetch error:", err);
+                document.getElementById('alerts-body').innerHTML = `<tr><td colspan="4" style="color:#ef4444;">⚠️ API Connection Failed (${err.message})</td></tr>`;
+            }
+        }
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch(`${API_BASE}/logs`);
+                if (!res.ok) throw new Error(`HTTP Status ${res.status}`);
+
+                const data = await res.json();
+                rawLogs = (data.hits && data.hits.hits) ? data.hits.hits : [];
+                renderLogs();
+            } catch (err) {
+                console.error("Logs fetch error:", err);
+                document.getElementById('logs-body').innerHTML = `<tr><td colspan="4" style="color:#ef4444;">⚠️ API Connection Failed (${err.message})</td></tr>`;
+            }
+        }
+
+        function setSeverityFilter(severity) {
+            activeSeverityFilter = severity;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (!btn.classList.contains('hunt-btn')) {
+                    btn.classList.toggle('active', btn.innerText === severity);
+                }
+            });
+            applyFilter();
+        }
+
+        function setHuntFilter(keyword) {
+            const searchInput = document.getElementById("searchInput");
+            searchInput.value = keyword;
+            applyFilter();
+        }
+
+        function applyFilter() {
+            renderAlerts();
+            renderLogs();
+        }
+
+        function renderAlerts() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            const tbody = document.getElementById('alerts-body');
+
+            if (rawAlerts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="color:#9ca3af;">No alerts triggered yet. Run the simulator...</td></tr>';
+                document.getElementById("alertCount").innerText = "0 visible";
+                return;
+            }
+
+            const filtered = rawAlerts.filter(hit => {
+                const alert = hit._source || hit;
+                const matchQuery = JSON.stringify(alert).toLowerCase().includes(query);
+                const matchSeverity = activeSeverityFilter === "ALL" || (alert.severity && alert.severity.toUpperCase() === activeSeverityFilter);
+                return matchQuery && matchSeverity;
+            });
+
+            document.getElementById("alertCount").innerText = `${filtered.length} visible`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="color:#9ca3af;">No matching alerts found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(hit => {
+                const alert = hit._source || hit;
+                const severity = alert.severity ? alert.severity.toUpperCase() : 'INFO';
+                return `<tr>
+                    <td><strong>${alert.alert_id || 'N/A'}</strong></td>
+                    <td>${alert.title || 'N/A'}</td>
+                    <td><span class="badge-${severity}">${severity}</span></td>
+                    <td>${alert.host_name || 'N/A'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderLogs() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            const tbody = document.getElementById('logs-body');
+
+            if (rawLogs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="color:#9ca3af;">No logs ingested yet. Run the simulator...</td></tr>';
+                document.getElementById("logCount").innerText = "0 visible";
+                return;
+            }
+
+            const filtered = rawLogs.filter(hit => {
+                const log = hit._source || hit;
+                return JSON.stringify(log).toLowerCase().includes(query);
+            });
+
+            document.getElementById("logCount").innerText = `${filtered.length} visible`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="color:#9ca3af;">No matching logs found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(hit => {
+                const log = hit._source || hit;
+                return `<tr>
+                    <td><strong>${log.event_id || 'N/A'}</strong></td>
+                    <td>${log.host_name || 'N/A'}</td>
+                    <td>${log.user_name || 'N/A'}</td>
+                    <td><code>${log.mitre_technique || 'N/A'}</code></td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function triggerContainment(isolate = true) {
+            const host = document.getElementById('target-host').value;
+            const output = document.getElementById('action-output');
+
+            if (!host) {
+                output.innerText = "> Error: Please specify a target host name.";
+                return;
+            }
+
+            const actionText = isolate ? "isolation" : "restoration";
+            output.innerText = `> Issuing ${actionText} signal to target ${host}...`;
+
+            try {
+                const res = await fetch(`${API_BASE}/containment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ host_name: host, isolate: isolate })
+                });
+                
+                if (!res.ok) throw new Error(`HTTP Status ${res.status}`);
+                
+                const result = await res.json();
+                output.innerText = `> Response: ${result.message || 'Signal delivered successfully.'}`;
+            } catch (err) {
+                output.innerText = `> Error sending containment signal: ${err.message}`;
+            }
+        }
+
+        // Auto-refresh tables every 3 seconds
+        setInterval(() => {
+            fetchAlerts();
+            fetchLogs();
+        }, 3000);
+
+        // Initial fetch on page load
+        fetchAlerts();
+        fetchLogs();
+    </script>
+</body>
+</html>

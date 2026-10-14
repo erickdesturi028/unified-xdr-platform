@@ -1,0 +1,37 @@
+version: "1.0"
+rules:
+  - id: rule-001
+    name: "Kerberoasting Attack Detected"
+    mitre_technique: "T1558.003"
+    severity: "CRITICAL"
+    conditions:
+      event_id: "4769"
+      metadata:
+        TicketEncryptionType: "0x17"
+
+  - id: rule-002
+    name: "Ransomware Volume Shadow Copy Deletion"
+    mitre_technique: "T1486"
+    severity: "CRITICAL"
+    conditions:
+      event_id: "4104"
+      metadata_contains:
+        ScriptBlockText: "vssadmin.exe delete shadows"
+
+  - id: rule-003
+    name: "Lateral Movement via Remote Encoded PowerShell"
+    mitre_technique: "T1021.006"
+    severity: "HIGH"
+    conditions:
+      event_id: "4104"
+      metadata:
+        ParentProcess: "wsmprovhost.exe"
+
+  - id: rule-004
+    name: "Credential Dumping Attempt (Mimikatz)"
+    mitre_technique: "T1003.001"
+    severity: "CRITICAL"
+    conditions:
+      event_id: "4104"
+      metadata_contains:
+        ScriptBlockText: "Invoke-Mimikatz"

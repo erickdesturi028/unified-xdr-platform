@@ -1,0 +1,20 @@
+# Go compiled binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Virtual Environment & Python cache
+venv/
+__pycache__/
+*.pyc
+
+# IDE configs
+.vscode/
+.idea/
+
+# OS specific files
+.DS_Store
+Thumbs.db
